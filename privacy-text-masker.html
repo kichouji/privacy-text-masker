@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IT機密データマスキングツール</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        textarea { width: 100%; height: 150px; margin-bottom: 10px; }
+        button { padding: 10px; margin-bottom: 10px; }
+        .output { white-space: pre-wrap; padding: 10px; border: 1px solid #ddd; background-color: #f9f9f9; }
+        .highlight { background-color: yellow; }
+    </style>
+</head>
+<body>
+    <h2>IT機密データマスキングツール</h2>
+    <textarea id="inputText" placeholder="ここにテキストを入力するか、貼り付けてください..."></textarea><br>
+    <label><input type="checkbox" id="maskIp" checked> IPアドレスをマスクする</label><br>
+    <label><input type="checkbox" id="maskEmail" checked> メールアドレスをマスクする</label><br>
+    <label><input type="checkbox" id="maskMac" checked> MACアドレスをマスクする</label><br>
+    <button onclick="maskSensitiveInfo()">マスキングする</button>
+    <h3>マスキングされた結果:</h3>
+    <div id="outputText" class="output"></div>
+    <button onclick="copyToClipboard()">マスキングされた結果をクリップボードにコピーする</button>
+
+    <script>
+        function maskSensitiveInfo() {
+            const inputText = document.getElementById('inputText').value;
+            let maskedText = inputText;
+
+            // MACアドレスのマスキング（チェックボックスがオンの場合） - MACを先にマスクすることでIPv6との衝突を防ぐ
+            if (document.getElementById('maskMac').checked) {
+                const macRegex = /\b([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}\b/g;
+                maskedText = maskedText.replace(macRegex, '<span class="highlight">xx:xx:xx:xx:xx:xx</span>');
+            }
+
+            // IPアドレスのマスキング（チェックボックスがオンの場合）
+            if (document.getElementById('maskIp').checked) {
+                const ipv4Regex = /\b(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\b/g;
+                const ipv6Regex = /\b([0-9a-fA-F]{1,4}:){1,7}[0-9a-fA-F]{1,4}\b(?![:\d])/g;
+                maskedText = maskedText.replace(ipv4Regex, '<span class="highlight">xxx.xxx.xxx.xxx</span>');
+                maskedText = maskedText.replace(ipv6Regex, (match) => {
+                    if (!/\d{1,2}:\d{1,2}:\d{1,2}/.test(match)) {
+                        return '<span class="highlight">xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx</span>';
+                    }
+                    return match;
+                });
+            }
+
+            // メールアドレスのマスキング（チェックボックスがオンの場合）
+            if (document.getElementById('maskEmail').checked) {
+                const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
+                maskedText = maskedText.replace(emailRegex, '<span class="highlight">sample@example.com</span>');
+            }
+
+            // 出力エリアに結果を表示
+            document.getElementById('outputText').innerHTML = maskedText;
+        }
+
+        function copyToClipboard() {
+            const outputText = document.getElementById('outputText').innerText;
+            navigator.clipboard.writeText(outputText);
+        }
+    </script>
+</body>
+</html>
